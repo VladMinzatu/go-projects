@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/VladMinzatu/go-projects/hn-scan/core/domain"
 	"github.com/VladMinzatu/go-projects/hn-scan/core/ports"
@@ -48,4 +50,18 @@ func (req *HNServiceRequest) Limit() int {
 
 func (req *HNServiceRequest) Terms() []string {
 	return req.terms
+}
+
+func extractWords(text string) []string {
+	var words []string
+	separatorFunc := func(c rune) bool {
+		return unicode.IsSpace(c) || unicode.IsPunct(c)
+	}
+
+	for _, word := range strings.FieldsFunc(text, separatorFunc) {
+		if len(word) > 0 {
+			words = append(words, strings.ToLower(word))
+		}
+	}
+	return words
 }

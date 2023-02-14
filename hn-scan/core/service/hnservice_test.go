@@ -96,6 +96,41 @@ func TestHNServiceRequest(t *testing.T) {
 	})
 }
 
+func TestWordExtraction(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		{
+			"",
+			nil,
+		},
+		{
+			"   , !   ",
+			nil,
+		},
+		{
+			"Hello, world!",
+			[]string{"hello", "world"},
+		},
+		{
+			"Go, unlike many other languages, is really cool!",
+			[]string{"go", "unlike", "many", "other", "languages", "is", "really", "cool"},
+		},
+		{
+			"  There are     a bunch of   , extra spaces and punctuation  signs in this title    !  ",
+			[]string{"there", "are", "a", "bunch", "of", "extra", "spaces", "and", "punctuation", "signs", "in", "this", "title"},
+		},
+	}
+
+	for _, test := range tests {
+		result := extractWords(test.input)
+		if !reflect.DeepEqual(result, test.expected) {
+			t.Errorf("extractWords(%q) = %v, but expected %v", test.input, result, test.expected)
+		}
+	}
+}
+
 type TopStoriesRepoStub struct {
 	stories []domain.Story
 	err     error
