@@ -34,9 +34,54 @@ func TestHNServiceHandlingRepoResult(t *testing.T) {
 	})
 
 	t.Run("propagate the stories from the repository when there is no error and the result is not nil", func(t *testing.T) {
-		stubStories := []domain.Story{{Title: "New Go Features", Url: "https://www.go.com"}, {Title: "New ML model", Url: "https://www.ml.com"}}
+		goStory := domain.Story{Title: "New Go Features", Url: "https://www.go.com"}
+		mlStory := domain.Story{Title: "New ML model", Url: "https://www.ml.com"}
+		javaStory := domain.Story{Title: "Design patterns in Java", Url: "https://www.java.com"}
+		stubStories := []domain.Story{goStory, mlStory, javaStory}
+		limit := len(stubStories)
+
 		service := NewHNService(NewTopStoriesRepoStub(stubStories, nil))
 		req, _ := NewHNServiceRequest(maxStories-1, nil)
+
+		tests := []struct {
+			input    *HNServiceRequest
+			expected []domain.Story
+		}{
+			{
+				&HNServiceRequest{limit: limit, terms: nil},
+				stubStories,
+			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{}},
+				stubStories,
+			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{"foo"}},
+				nil,
+			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{"go"}},
+				[]domain.Story{goStory},
+			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{"java", "go"}},
+				[]domain.Story{goStory, javaStory},
+			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{"go", "features"}},
+				[]domain.Story{goStory},
+			},
+		}
+
+		for _, test := range tests {
+			result, err := service.GetTopStories(test.input)
+			if err != nil {
+				t.Errorf("Unexpected error in test case for input %q: Got error %v", test.input, err)
+			}
+			if !reflect.DeepEqual(result, test.expected) {
+				t.Errorf("GetTopStories(%q) = %v, but expected %v", test.input, result, test.expected)
+			}
+		}
 
 		stories, _ := service.GetTopStories(req)
 

@@ -23,9 +23,32 @@ func NewHNService(topStoriesRepo ports.TopStoriesRepo) HNService {
 }
 
 func (service HNService) GetTopStories(request *HNServiceRequest) ([]domain.Story, error) {
+	stories, err := service.topStoriesRepo.GetTopStories(request.Limit())
+	if err != nil {
+		return nil, err
+	}
 
-	//TODO: wrap the error?
-	return service.topStoriesRepo.GetTopStories(request.Limit())
+	if len(request.Terms()) == 0 {
+		return stories, nil
+	}
+
+	var result []domain.Story
+	termsMap := make(map[string]bool)
+	for _, term := range request.Terms() {
+		termsMap[term] = true
+	}
+
+	for _, story := range stories {
+		words := extractWords(story.Title)
+		for _, word := range words {
+			if termsMap[word] {
+				result = append(result, story)
+				break
+			}
+		}
+	}
+
+	return result, nil
 }
 
 type HNServiceRequest struct {
