@@ -11,8 +11,8 @@ type TopStoriesRepo struct {
 }
 
 type HackerNewsClient interface {
-	GetTopStoryIds() ([]string, error)
-	ResolveStory(id string) (domain.Story, error)
+	GetTopStoryIds() ([]int, error)
+	ResolveStory(id int) (domain.Story, error)
 }
 
 func NewTopStoriesRepo(client HackerNewsClient) *TopStoriesRepo {
@@ -27,7 +27,7 @@ func (repo *TopStoriesRepo) GetTopStories(n int) ([]domain.Story, error) {
 	return repo.resolveStories(storyIds)
 }
 
-func (repo *TopStoriesRepo) getStoryIds(n int) ([]string, error) {
+func (repo *TopStoriesRepo) getStoryIds(n int) ([]int, error) {
 	storyIds, err := repo.client.GetTopStoryIds()
 	if err != nil {
 		return storyIds, err
@@ -42,7 +42,7 @@ type Result struct {
 	err   error
 }
 
-func (repo *TopStoriesRepo) resolveStories(ids []string) ([]domain.Story, error) {
+func (repo *TopStoriesRepo) resolveStories(ids []int) ([]domain.Story, error) {
 	ch := make(chan Result)
 	for idx, id := range ids {
 		storyId := id // TODO: needed for concurrently fetching all ids and not repeating the same id??
@@ -69,7 +69,7 @@ func (repo *TopStoriesRepo) resolveStories(ids []string) ([]domain.Story, error)
 	return stories, nil
 }
 
-func (repo *TopStoriesRepo) resolveStory(idx int, id string, ch chan<- Result) (domain.Story, error) {
+func (repo *TopStoriesRepo) resolveStory(idx, id int, ch chan<- Result) (domain.Story, error) {
 	story, err := repo.client.ResolveStory(id)
 	ch <- Result{idx: idx, story: story, err: err}
 	return story, nil

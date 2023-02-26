@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ import (
 func TestFetchingTopStories(t *testing.T) {
 
 	t.Run("unmarshals correct story id data successfully", func(t *testing.T) {
-		testData := []string{"1", "2", "3", "4", "5"}
+		testData := []int{1, 2, 3, 4, 5}
 		ts, err := startTestServer(testData)
 		if err != nil {
 			t.Errorf("Failed to start test server due to failure: %s", err.Error())
@@ -50,7 +51,7 @@ func TestResolvingStoriesById(t *testing.T) {
 		}
 
 		client := NewClient(storyResolutionUrlPrefix(ts.URL))
-		story, err := client.ResolveStory("123")
+		story, err := client.ResolveStory(123)
 		if err != nil {
 			t.Errorf("Error making request: %s", err.Error())
 		}
@@ -60,7 +61,7 @@ func TestResolvingStoriesById(t *testing.T) {
 	})
 
 	t.Run("passing the correct url to resolve a story", func(t *testing.T) {
-		id := "the_correct_test_id"
+		id := 12345
 		ts := startTestServerExpectingTheCorrectStoryUrl(id)
 		defer ts.Close()
 
@@ -92,7 +93,7 @@ func callGetTopStoryIds(client *HackerNewsClientImpl) (any, error) {
 }
 
 func callResolveRandomStory(client *HackerNewsClientImpl) (any, error) {
-	return client.ResolveStory("123")
+	return client.ResolveStory(123)
 }
 
 type callExportedClientMethod func(*HackerNewsClientImpl) (any, error)
@@ -165,11 +166,11 @@ func startTestServerOverloaded() *httptest.Server {
 			}))
 }
 
-func startTestServerExpectingTheCorrectStoryUrl(id string) *httptest.Server {
+func startTestServerExpectingTheCorrectStoryUrl(id int) *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				if !strings.HasSuffix(r.URL.String(), id) {
+				if !strings.HasSuffix(r.URL.String(), strconv.Itoa(id)+".json") {
 					http.Error(w, "The resource was not found", http.StatusNotFound)
 				}
 				story, err := json.Marshal(StoryResponseDto{Title: "Well done", Url: "www"})

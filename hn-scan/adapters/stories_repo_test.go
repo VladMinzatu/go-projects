@@ -9,19 +9,19 @@ import (
 )
 
 func TestGettingTopStoriesHappyPath(t *testing.T) {
-	storyResolutions := map[string]domain.Story{
-		"1": {Title: "New Go features", Url: "www.go.com"},
-		"2": {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
-		"3": {Title: "What's new in Java", Url: "www.java.com"},
-		"4": {Title: "What's new in Python", Url: "www.python.com"},
-		"5": {Title: "Breaking world news", Url: "www.news.com"},
+	storyResolutions := map[int]domain.Story{
+		1: {Title: "New Go features", Url: "www.go.com"},
+		2: {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
+		3: {Title: "What's new in Java", Url: "www.java.com"},
+		4: {Title: "What's new in Python", Url: "www.python.com"},
+		5: {Title: "Breaking world news", Url: "www.news.com"},
 	}
 	mockClient := &MockHackerNewsClient{
-		storyIds:         []string{"1", "2", "3", "4", "5"},
+		storyIds:         []int{1, 2, 3, 4, 5},
 		storyIdsError:    nil,
 		storyResolutions: storyResolutions,
 	}
-	expected := []domain.Story{storyResolutions["1"], storyResolutions["2"], storyResolutions["3"]}
+	expected := []domain.Story{storyResolutions[1], storyResolutions[2], storyResolutions[3]}
 	repo := NewTopStoriesRepo(mockClient)
 	response, _ := repo.GetTopStories(3)
 
@@ -31,18 +31,18 @@ func TestGettingTopStoriesHappyPath(t *testing.T) {
 }
 
 func TestWillNotTryToResolveMoreStoriesThanTheLimit(t *testing.T) {
-	storyResolutions := map[string]domain.Story{
-		"1": {Title: "New Go features", Url: "www.go.com"},
-		"2": {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
-		"3": {Title: "What's new in Java", Url: "www.java.com"},
+	storyResolutions := map[int]domain.Story{
+		1: {Title: "New Go features", Url: "www.go.com"},
+		2: {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
+		3: {Title: "What's new in Java", Url: "www.java.com"},
 		// only 3 resolvable
 	}
 	mockClient := &MockHackerNewsClient{
-		storyIds:         []string{"1", "2", "3", "4", "5"}, // but 5 story ids returned
+		storyIds:         []int{1, 2, 3, 4, 5}, // but 5 story ids returned
 		storyIdsError:    nil,
 		storyResolutions: storyResolutions,
 	}
-	expected := []domain.Story{storyResolutions["1"], storyResolutions["2"], storyResolutions["3"]}
+	expected := []domain.Story{storyResolutions[1], storyResolutions[2], storyResolutions[3]}
 	repo := NewTopStoriesRepo(mockClient)
 	response, _ := repo.GetTopStories(3) // it's ok because we only try to resolve the first 3
 
@@ -52,16 +52,16 @@ func TestWillNotTryToResolveMoreStoriesThanTheLimit(t *testing.T) {
 }
 
 func TestStoriesThatCannotBeResolvedAreSkipped(t *testing.T) {
-	storyResolutions := map[string]domain.Story{
-		"1": {Title: "New Go features", Url: "www.go.com"},
-		"3": {Title: "What's new in Java", Url: "www.java.com"},
+	storyResolutions := map[int]domain.Story{
+		1: {Title: "New Go features", Url: "www.go.com"},
+		3: {Title: "What's new in Java", Url: "www.java.com"},
 	}
 	mockClient := &MockHackerNewsClient{
-		storyIds:         []string{"1", "2", "3", "4", "5"},
+		storyIds:         []int{1, 2, 3, 4, 5},
 		storyIdsError:    nil,
 		storyResolutions: storyResolutions,
 	}
-	expected := []domain.Story{storyResolutions["1"], storyResolutions["3"]} // 2 is simply skipped in the result
+	expected := []domain.Story{storyResolutions[1], storyResolutions[3]} // 2 is simply skipped in the result
 	repo := NewTopStoriesRepo(mockClient)
 	response, _ := repo.GetTopStories(3)
 
@@ -71,10 +71,10 @@ func TestStoriesThatCannotBeResolvedAreSkipped(t *testing.T) {
 }
 
 func TestFailureToGetStoryIds(t *testing.T) {
-	storyResolutions := map[string]domain.Story{
-		"1": {Title: "New Go features", Url: "www.go.com"},
-		"2": {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
-		"3": {Title: "What's new in Java", Url: "www.java.com"},
+	storyResolutions := map[int]domain.Story{
+		1: {Title: "New Go features", Url: "www.go.com"},
+		2: {Title: "New Tensorflow realease", Url: "www.tensorflow.com"},
+		3: {Title: "What's new in Java", Url: "www.java.com"},
 	}
 	errorFetchingTopStoryIds := errors.New("Failed to fetch top story ids")
 	mockClient := &MockHackerNewsClient{
@@ -92,19 +92,19 @@ func TestFailureToGetStoryIds(t *testing.T) {
 }
 
 type MockHackerNewsClient struct {
-	storyIds         []string
+	storyIds         []int
 	storyIdsError    error
-	storyResolutions map[string]domain.Story
+	storyResolutions map[int]domain.Story
 }
 
-func (client *MockHackerNewsClient) GetTopStoryIds() ([]string, error) {
+func (client *MockHackerNewsClient) GetTopStoryIds() ([]int, error) {
 	if client.storyIdsError != nil {
 		return nil, client.storyIdsError
 	}
 	return client.storyIds, nil
 }
 
-func (client *MockHackerNewsClient) ResolveStory(id string) (domain.Story, error) {
+func (client *MockHackerNewsClient) ResolveStory(id int) (domain.Story, error) {
 	if result, found := client.storyResolutions[id]; found {
 		return result, nil
 	}
