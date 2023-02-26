@@ -1,6 +1,8 @@
 package adapters
 
 import (
+	"sort"
+
 	"github.com/VladMinzatu/go-projects/hn-scan/core/domain"
 )
 
@@ -13,8 +15,8 @@ type HackerNewsClient interface {
 	ResolveStory(id string) (domain.Story, error)
 }
 
-func NewTopStoriesRepo(client HackerNewsClient) TopStoriesRepo {
-	return TopStoriesRepo{client: client}
+func NewTopStoriesRepo(client HackerNewsClient) *TopStoriesRepo {
+	return &TopStoriesRepo{client: client}
 }
 
 func (repo *TopStoriesRepo) GetTopStories(n int) ([]domain.Story, error) {
@@ -31,33 +33,44 @@ func (repo *TopStoriesRepo) getStoryIds(n int) ([]string, error) {
 		return storyIds, err
 	}
 
-	return storyIds, nil
+	return storyIds[:n], nil
 }
 
 type Result struct {
+	idx   int
 	story domain.Story
 	err   error
 }
 
 func (repo *TopStoriesRepo) resolveStories(ids []string) ([]domain.Story, error) {
 	ch := make(chan Result)
-	for _, id := range ids {
+	for idx, id := range ids {
 		storyId := id // TODO: needed for concurrently fetching all ids and not repeating the same id??
-		go repo.resolveStory(storyId, ch)
+		go repo.resolveStory(idx, storyId, ch)
 	}
-	var stories []domain.Story
+	var results []Result
 	for range ids {
 		result := <-ch
 		if result.err != nil {
 			// TODO: log warn in fetching
+		} else {
+			results = append(results, result)
 		}
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].idx < results[j].idx
+	})
+
+	var stories []domain.Story
+	for _, result := range results {
 		stories = append(stories, domain.Story{Title: result.story.Title, Url: result.story.Url})
 	}
+
 	return stories, nil
 }
 
-func (repo *TopStoriesRepo) resolveStory(id string, ch chan<- Result) (domain.Story, error) {
+func (repo *TopStoriesRepo) resolveStory(idx int, id string, ch chan<- Result) (domain.Story, error) {
 	story, err := repo.client.ResolveStory(id)
-	ch <- Result{story: story, err: err}
+	ch <- Result{idx: idx, story: story, err: err}
 	return story, nil
 }
