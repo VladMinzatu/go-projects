@@ -35,7 +35,7 @@ func (service HNService) GetTopStories(request *HNServiceRequest) ([]domain.Stor
 	var result []domain.Story
 	termsMap := make(map[string]bool)
 	for _, term := range request.Terms() {
-		termsMap[term] = true
+		termsMap[strings.ToLower(term)] = true
 	}
 
 	for _, story := range stories {

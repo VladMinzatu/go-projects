@@ -71,6 +71,10 @@ func TestHNServiceHandlingRepoResult(t *testing.T) {
 				&HNServiceRequest{limit: limit, terms: []string{"go", "features"}},
 				[]domain.Story{goStory},
 			},
+			{
+				&HNServiceRequest{limit: limit, terms: []string{"Go"}}, // uppercase in query
+				[]domain.Story{goStory},
+			},
 		}
 
 		for _, test := range tests {

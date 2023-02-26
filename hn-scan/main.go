@@ -11,7 +11,7 @@ import (
 
 func main() {
 	svc := setUpService()
-	request, _ := service.NewHNServiceRequest(50, []string{"go"})
+	request, _ := service.NewHNServiceRequest(50, []string{"Go"})
 	result, err := svc.GetTopStories(request)
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
