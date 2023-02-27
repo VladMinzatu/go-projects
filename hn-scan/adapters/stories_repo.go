@@ -3,6 +3,8 @@ package adapters
 import (
 	"sort"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/VladMinzatu/go-projects/hn-scan/core/domain"
 )
 
@@ -52,8 +54,9 @@ func (repo *TopStoriesRepo) resolveStories(ids []int) ([]domain.Story, error) {
 	for range ids {
 		result := <-ch
 		if result.err != nil {
-			// TODO: log warn in fetching
+			log.Warnf("Failed to resolve story with id %d. Cause %s", ids[result.idx], result.err.Error())
 		} else {
+			log.Debugf("Successfully resolved story with id %d (\"%s\" %s).", ids[result.idx], result.story.Title, result.story.Url)
 			results = append(results, result)
 		}
 	}
