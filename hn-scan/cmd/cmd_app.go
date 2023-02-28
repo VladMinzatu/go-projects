@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/VladMinzatu/go-projects/hn-scan/adapters"
 	"github.com/VladMinzatu/go-projects/hn-scan/core/service"
 )
@@ -31,6 +33,7 @@ func (t *termsParam) Set(value string) error {
 type config struct {
 	numStories int
 	terms      termsParam
+	debug      bool
 }
 
 type CmdApp struct {
@@ -58,11 +61,12 @@ func (app CmdApp) Run(w io.Writer, args []string) error {
 }
 
 func parseArgs(w io.Writer, args []string) (config, error) {
-	c := config{numStories: defaultStories, terms: []string{}}
+	c := config{numStories: defaultStories, terms: []string{}, debug: false}
 	fs := flag.NewFlagSet("hn-scan-app", flag.ContinueOnError)
 	fs.SetOutput(w)
 	fs.IntVar(&c.numStories, "n", defaultStories, "Number of stories to scan")
 	fs.Var(&c.terms, "term", "Term to use for filtering stories.")
+	fs.BoolVar(&c.debug, "debug", false, "Print debug logs")
 	err := fs.Parse(args)
 	if err != nil {
 		return c, err
@@ -74,6 +78,10 @@ func parseArgs(w io.Writer, args []string) (config, error) {
 }
 
 func (app CmdApp) run(w io.Writer, config config) error {
+	if config.debug {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	request, err := service.NewHNServiceRequest(config.numStories, config.terms)
 	if err != nil {
 		return err
