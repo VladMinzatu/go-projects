@@ -2,29 +2,16 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
+	"os"
 
-	"github.com/VladMinzatu/go-projects/hn-scan/adapters"
-	"github.com/VladMinzatu/go-projects/hn-scan/core/service"
+	"github.com/VladMinzatu/go-projects/hn-scan/cmd"
 )
 
 func main() {
-	svc := setUpService()
-	request, _ := service.NewHNServiceRequest(50, []string{"Go"})
-	result, err := svc.GetTopStories(request)
-	if err != nil {
-		fmt.Printf("Error: %s", err.Error())
-	}
-	fmt.Println(result)
-}
+	err := cmd.NewCmdApp().Run(os.Stderr, os.Args[1:])
 
-func setUpService() service.HNService {
-	httpClient := http.Client{
-		Timeout: 5 * time.Second,
+	if err != nil {
+		fmt.Fprintln(os.Stdout, err)
+		os.Exit(1)
 	}
-	topStoriesUrl := "https://hacker-news.firebaseio.com/v0/topstories.json"
-	storyResolutionUrl := "https://hacker-news.firebaseio.com/v0/item/"
-	hnClient := adapters.NewHackerNewsClient(&httpClient, topStoriesUrl, storyResolutionUrl)
-	return service.NewHNService(adapters.NewTopStoriesRepo(hnClient))
 }
