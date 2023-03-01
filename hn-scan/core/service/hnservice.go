@@ -11,7 +11,7 @@ import (
 
 const (
 	minStories = 1
-	maxStories = 50
+	maxStories = 100
 )
 
 type HNService struct {

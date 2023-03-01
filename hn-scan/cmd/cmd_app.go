@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/VladMinzatu/go-projects/hn-scan/adapters"
+	"github.com/VladMinzatu/go-projects/hn-scan/core/domain"
 	"github.com/VladMinzatu/go-projects/hn-scan/core/service"
 )
 
@@ -36,8 +36,12 @@ type config struct {
 	debug      bool
 }
 
+type HNService interface {
+	GetTopStories(request *service.HNServiceRequest) ([]domain.Story, error)
+}
+
 type CmdApp struct {
-	svc service.HNService
+	svc HNService
 }
 
 func NewCmdApp() CmdApp {
@@ -52,7 +56,7 @@ func NewCmdApp() CmdApp {
 }
 
 func (app CmdApp) Run(w io.Writer, args []string) error {
-	conf, err := parseArgs(os.Stderr, args)
+	conf, err := parseArgs(w, args)
 	if err != nil {
 		return err
 	}
