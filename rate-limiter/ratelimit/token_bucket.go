@@ -56,7 +56,8 @@ func NewTokenBucketRateLimiter(maxRpm, rampUpMinutes int) (*TokenBucketRateLimit
 		rampingDelta = 0
 		startCapacity = maxRpm
 	}
-	return &TokenBucketRateLimiter{maxRpm: maxRpm, rampUpMinutes: rampUpMinutes, currentCapacity: startCapacity, tokens: startCapacity, rampingDelta: rampingDelta}, nil
+	stop := make(chan bool)
+	return &TokenBucketRateLimiter{maxRpm: maxRpm, rampUpMinutes: rampUpMinutes, currentCapacity: startCapacity, tokens: startCapacity, rampingDelta: rampingDelta, stop: stop}, nil
 }
 
 func (rl *TokenBucketRateLimiter) Accept() bool {
