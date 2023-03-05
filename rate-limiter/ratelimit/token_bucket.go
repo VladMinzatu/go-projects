@@ -8,10 +8,18 @@ package ratelimit
 
 import (
 	"errors"
-	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	rcurrentCapacityGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "current_capacity",
+		Help: "The current capacity of the bucket measured in rpm",
+	})
 )
 
 const (
@@ -26,11 +34,10 @@ type TokenBucketRateLimiter struct {
 	maxRpm        int // peak number of requests per minute allowed e.g. 60 * 500rps = 30_000
 	rampUpMinutes int // number of minutes over which to smoothly ramp up to the max rpm
 
-	tokens              int // current number of tokens in the bucket
-	currentCapacity     int
-	lastRefillTimestamp time.Time
-	rampingDelta        int
-	mutex               sync.Mutex
+	tokens          int // current number of tokens in the bucket
+	currentCapacity int
+	rampingDelta    int
+	stop            chan bool
 }
 
 func NewTokenBucketRateLimiter(maxRpm, rampUpMinutes int) (*TokenBucketRateLimiter, error) {
@@ -49,13 +56,10 @@ func NewTokenBucketRateLimiter(maxRpm, rampUpMinutes int) (*TokenBucketRateLimit
 		rampingDelta = 0
 		startCapacity = maxRpm
 	}
-	return &TokenBucketRateLimiter{maxRpm: maxRpm, rampUpMinutes: rampUpMinutes, currentCapacity: startCapacity, tokens: startCapacity, lastRefillTimestamp: time.Now(), rampingDelta: rampingDelta}, nil
+	return &TokenBucketRateLimiter{maxRpm: maxRpm, rampUpMinutes: rampUpMinutes, currentCapacity: startCapacity, tokens: startCapacity, rampingDelta: rampingDelta}, nil
 }
 
 func (rl *TokenBucketRateLimiter) Accept() bool {
-	rl.mutex.Lock()
-	defer rl.mutex.Unlock()
-	rl.refill()
 	if rl.tokens > 0 {
 		rl.tokens -= 1
 		log.Debugf("Token retrieved from bucket. Tokens left: %d", rl.tokens)
@@ -65,14 +69,25 @@ func (rl *TokenBucketRateLimiter) Accept() bool {
 	return false
 }
 
+func (rl *TokenBucketRateLimiter) Start() {
+	go rl.refill()
+}
+
+func (rl *TokenBucketRateLimiter) Stop() {
+	rl.stop <- true
+}
+
 func (rl *TokenBucketRateLimiter) refill() {
-	secondsPassed := float64(time.Since(rl.lastRefillTimestamp).Nanoseconds()) / float64(time.Second)
-	if secondsPassed >= refillIntervalSeconds {
-		rl.rampUp()
-		tokensToAdd := int(float64(max(rl.currentCapacity/refillsPerMinute, 1)) * (secondsPassed / refillIntervalSeconds))
-		rl.tokens = min(rl.tokens+tokensToAdd, rl.currentCapacity)
-		log.Debugf("Adding %d tokens to bucket. New capacity: %d", tokensToAdd, rl.currentCapacity)
-		rl.lastRefillTimestamp = time.Now()
+	for {
+		select {
+		case <-rl.stop:
+			return
+		case <-time.After(refillIntervalSeconds * time.Second):
+			rl.rampUp()
+			tokensToAdd := max(rl.currentCapacity/refillsPerMinute, 1)
+			rl.tokens = min(rl.tokens+tokensToAdd, rl.currentCapacity)
+			log.Debugf("Adding %d tokens to bucket. New capacity: %d", tokensToAdd, rl.currentCapacity)
+		}
 	}
 }
 
@@ -85,6 +100,7 @@ func (rl *TokenBucketRateLimiter) rampUp() {
 		rl.currentCapacity = min(rl.currentCapacity+rl.rampingDelta, rl.maxRpm)
 		log.Debugf("Scaled up capacity to %d", rl.currentCapacity)
 	}
+	rcurrentCapacityGauge.Set(float64(rl.currentCapacity))
 }
 
 func min(a, b int) int {
