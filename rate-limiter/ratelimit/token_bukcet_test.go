@@ -67,20 +67,17 @@ func TestRateLimitingLogic(t *testing.T) {
 	t.Run("test that rate limit is enforced", func(t *testing.T) {
 		rl, _ := NewTokenBucketRateLimiter(20, 1)
 		rl.Start()
+		defer rl.Stop()
 		if rl.currentCapacity != 2 || rl.tokens != 2 {
-			rl.Stop()
 			t.Errorf("Expected to start off with 2 tokens (10 percent of max), but currentCapacity=%d and tokens=%d", rl.currentCapacity, rl.tokens)
 		}
 		if rl.Accept() != true {
-			rl.Stop()
 			t.Errorf("Consuming first token failed unexpectedly")
 		}
 		if rl.Accept() != true {
-			rl.Stop()
 			t.Errorf("Consuming the second token failed unexpectedly")
 		}
 		if rl.Accept() != false {
-			rl.Stop()
 			t.Errorf("Consuming third token was allowed unexpectedly")
 		}
 	})
