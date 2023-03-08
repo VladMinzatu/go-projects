@@ -9,15 +9,15 @@ import (
 )
 
 type TopStoriesRepo struct {
-	client HackerNewsClient
+	client hackerNewsClient
 }
 
-type HackerNewsClient interface {
+type hackerNewsClient interface {
 	GetTopStoryIds() ([]int, error)
 	ResolveStory(id int) (domain.Story, error)
 }
 
-func NewTopStoriesRepo(client HackerNewsClient) *TopStoriesRepo {
+func NewTopStoriesRepo(client hackerNewsClient) *TopStoriesRepo {
 	return &TopStoriesRepo{client: client}
 }
 

@@ -36,12 +36,12 @@ type config struct {
 	debug      bool
 }
 
-type HNService interface {
+type hNService interface {
 	GetTopStories(request *service.HNServiceRequest) ([]domain.Story, error)
 }
 
 type CmdApp struct {
-	svc HNService
+	svc hNService
 }
 
 func NewCmdApp() CmdApp {
