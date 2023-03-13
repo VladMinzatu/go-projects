@@ -60,11 +60,7 @@ func NewHNServiceRequest(limit int, terms []string) (*HNServiceRequest, error) {
 	if limit < minStories || limit > maxStories {
 		return nil, fmt.Errorf("Requested number of stories out of bounds [%d, %d]", minStories, maxStories)
 	}
-	if terms == nil {
-		return &HNServiceRequest{limit: limit, terms: []string{}}, nil
-	} else {
-		return &HNServiceRequest{limit: limit, terms: terms}, nil
-	}
+	return &HNServiceRequest{limit: limit, terms: terms}, nil
 }
 
 func (req *HNServiceRequest) Limit() int {

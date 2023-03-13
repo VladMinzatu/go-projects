@@ -139,8 +139,8 @@ func TestHNServiceRequest(t *testing.T) {
 		if err != nil {
 			t.Error("expected non-nil error, but got nil")
 		}
-		if req.Terms() == nil || len(req.Terms()) != 0 {
-			t.Errorf("expected empty slice of terms, got %q", req.Terms())
+		if req.Terms() != nil {
+			t.Errorf("expected nil slice of terms, got %q", req.Terms())
 		}
 	})
 }
