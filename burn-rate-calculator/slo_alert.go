@@ -82,7 +82,7 @@ func (s *Scenario) Check() bool {
 }
 
 func (s *Scenario) DetectionTime() time.Duration {
-	if !s.Check() {
+	if !s.Check() { // equivalent to duration > AlertWindowSize (easily provable by substituting in equations)
 		return -1
 	}
 	duration := (1.0 - s.Alert.SLO) / s.ErrorRate * float64(s.Alert.AlertWindowSize) * float64(s.Alert.BurnRate)
