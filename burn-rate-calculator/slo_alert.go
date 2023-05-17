@@ -78,7 +78,7 @@ func NewScenario(alert *SLOAlert, errorRate float64) (*Scenario, error) {
 
 func (s *Scenario) Check() bool {
 	errorBudgetPercentage := 1.0 - s.Alert.SLO
-	return s.ErrorRate > s.Alert.BurnRate*(errorBudgetPercentage)
+	return s.ErrorRate > s.Alert.BurnRate*errorBudgetPercentage
 }
 
 func (s *Scenario) DetectionTime() time.Duration {
