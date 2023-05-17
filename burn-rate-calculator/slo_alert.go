@@ -38,13 +38,13 @@ type Scenario struct {
 }
 
 func NewSLOAlert(slo float64, alertWindowSize time.Duration, burnRate float64) (*SLOAlert, error) {
-	if slo < 0 || slo > 1 {
+	if slo < MinSLO || slo > MaxSLO {
 		return nil, ErrSLOOutOfRange
 	}
-	if alertWindowSize < 10*time.Minute || alertWindowSize > 24*time.Hour {
+	if alertWindowSize < MinAlertTimeWindow || alertWindowSize > MaxAlertTimeWindow {
 		return nil, ErrAlertTimeWindowOutOfRange
 	}
-	if burnRate < 1 || burnRate > 100 {
+	if burnRate < MinBurnRate || burnRate > MaxBurnRate {
 		return nil, ErrBurnRateOutOfRange
 	}
 	return &SLOAlert{
@@ -55,7 +55,7 @@ func NewSLOAlert(slo float64, alertWindowSize time.Duration, burnRate float64) (
 }
 
 func NewSLOAlertFromPercentageUsed(slo float64, alertWindowSize time.Duration, errorBudgetUsed float64) (*SLOAlert, error) {
-	if errorBudgetUsed < 0 || errorBudgetUsed > 1 {
+	if errorBudgetUsed < MinErrorBudgetUsed || errorBudgetUsed > MaxErrorBudgetUsed {
 		return nil, ErrErrorBudgetUsedOutOfRange
 	}
 	burnRate := errorBudgetUsed * float64(SLOWindowSize) / float64(alertWindowSize)
