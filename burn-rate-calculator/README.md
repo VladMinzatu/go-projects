@@ -6,6 +6,6 @@ For your given SLO over a 28 day period (e.g. 99% success rate), you can define 
 Then, for a given error rate that you might start observing you can query:
 - whether the alert will be triggered
 - how long it will take for the alert to trigger once the errors start happening at the given rate
-- what percentage of the error budget will have been consumed by the time the alert is triggered (spoiler! it's the percentage you set to alert on, but you also have the option to define your alert in terms of burn rate and then query this percentage.)
+- what percentage of the error budget will have been consumed by the time the alert is triggered (spoiler! it's the percentage you set to alert on, but you also have the option to define your alert in terms of burn rate and then query this percentage - that may be handy when exploring your options because the actual alert condition is implemented in terms of the burn_rate)
 
 This can be used to understand the behavior of the alerting and tune the parameters to your expectations before putting the alert live.
