@@ -17,14 +17,16 @@ func main() {
 
 	errorRate := 1.0
 	fmt.Printf("We start seeing Error Rate: %.2f%%\n", errorRate*100)
-	sloCheck, err := sloAlert.Check(errorRate)
+	scenario, err := NewScenario(sloAlert, errorRate)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	sloCheck := scenario.Check()
 	fmt.Printf("  Alert Will Trigger: %t\n", sloCheck)
+
 	if sloCheck {
-		detectionTime, _ := sloAlert.DetectionTime(errorRate)
+		detectionTime := scenario.DetectionTime()
 		fmt.Printf("  Detection Time: %s\n", detectionTime)
 		errorBudgetConsumed := sloAlert.ErrorBudgetConsumedBeforeTriggering()
 		fmt.Printf("  Error Budget Consumed Before Triggering: %.2f%% \n", errorBudgetConsumed*100)

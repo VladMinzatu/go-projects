@@ -31,6 +31,12 @@ type SLOAlert struct {
 	BurnRate        float64
 }
 
+// A scenario models the alert behavior in a given circumstance, described by observing a fixed error rate in the system
+type Scenario struct {
+	Alert     *SLOAlert
+	ErrorRate float64
+}
+
 func NewSLOAlert(slo float64, alertWindowSize time.Duration, burnRate float64) (*SLOAlert, error) {
 	if slo < 0 || slo > 1 {
 		return nil, ErrSLOOutOfRange
@@ -56,25 +62,29 @@ func NewSLOAlertFromPercentageUsed(slo float64, alertWindowSize time.Duration, e
 	return NewSLOAlert(slo, alertWindowSize, burnRate)
 }
 
-func (a *SLOAlert) Check(errorRate float64) (bool, error) {
-	if errorRate < 0 || errorRate > 1 {
-		return false, ErrErrorRateOutOfRange
-	}
-	errorBudgetPercentage := 1.0 - a.SLO
-	return errorRate > a.BurnRate*(errorBudgetPercentage), nil
-}
-
-func (a *SLOAlert) DetectionTime(errorRate float64) (time.Duration, error) {
-	if errorRate < 0 || errorRate > 1 {
-		return 0, ErrErrorRateOutOfRange
-	}
-	duration := (1.0 - a.SLO) / errorRate * float64(a.AlertWindowSize) * float64(a.BurnRate)
-	if duration > float64(a.AlertWindowSize) {
-		return -1, nil // error rate too low to detect
-	}
-	return time.Duration(duration), nil
-}
-
 func (a *SLOAlert) ErrorBudgetConsumedBeforeTriggering() float64 {
 	return a.BurnRate * float64(a.AlertWindowSize) / float64(SLOWindowSize)
+}
+
+func NewScenario(alert *SLOAlert, errorRate float64) (*Scenario, error) {
+	if errorRate < MinErrorRate || errorRate > MaxErrorRate {
+		return nil, ErrErrorRateOutOfRange
+	}
+	return &Scenario{
+		Alert:     alert,
+		ErrorRate: errorRate,
+	}, nil
+}
+
+func (s *Scenario) Check() bool {
+	errorBudgetPercentage := 1.0 - s.Alert.SLO
+	return s.ErrorRate > s.Alert.BurnRate*(errorBudgetPercentage)
+}
+
+func (s *Scenario) DetectionTime() time.Duration {
+	if !s.Check() {
+		return -1
+	}
+	duration := (1.0 - s.Alert.SLO) / s.ErrorRate * float64(s.Alert.AlertWindowSize) * float64(s.Alert.BurnRate)
+	return time.Duration(duration)
 }

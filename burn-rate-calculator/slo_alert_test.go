@@ -54,35 +54,45 @@ func TestCreatingAlertFromErrorBusgetUsed(t *testing.T) {
 	}
 }
 
+func TestCreatingNewScenario(t *testing.T) {
+	alert, _ := NewSLOAlert(0.99, 1*time.Hour, 2.0)
+	tests := []struct {
+		errorRate     float64
+		expectedError error
+	}{
+		{0.01, nil},
+		{0.03, nil},
+		{-0.01, ErrErrorRateOutOfRange},
+		{1.01, ErrErrorRateOutOfRange},
+	}
+	for _, test := range tests {
+		_, err := NewScenario(alert, test.errorRate)
+		if err != test.expectedError {
+			t.Errorf("NewScenario(%f) returned error: %v", test.errorRate, err)
+		}
+	}
+}
+
 func TestAlertCondition(t *testing.T) {
 	alert, _ := NewSLOAlert(0.99, 1*time.Hour, 2.0)
-	if check, _ := alert.Check(0.01); check {
+	if scenario, _ := NewScenario(alert, 0.01); scenario.Check() {
 		t.Errorf("Alert triggered when it should not have (error rate: 1%%)")
 	}
-	if check, _ := alert.Check(0.03); !check {
+	if scenario, _ := NewScenario(alert, 0.03); !scenario.Check() {
 		t.Errorf("Alert failed to trigger when it should have (error rate: 3%%)")
-	}
-	if _, err := alert.Check(-0.01); err != ErrErrorRateOutOfRange {
-		t.Errorf("Alert.Check(-0.01) returned error: %v", err)
-	}
-	if _, err := alert.Check(1.01); err != ErrErrorRateOutOfRange {
-		t.Errorf("Alert.Check(1.01) returned error: %v", err)
 	}
 }
 
 func TestDetectionTime(t *testing.T) {
 	alert, _ := NewSLOAlert(0.99, 1*time.Hour, 2.0)
-	if _, err := alert.DetectionTime(-0.01); err != ErrErrorRateOutOfRange {
-		t.Errorf("Alert.DetectionTime(0.01) returned error: %v", err)
+	if scenario, _ := NewScenario(alert, 1.0); scenario.DetectionTime() != 1*time.Minute+12*time.Second {
+		t.Errorf("Scenario.DetectionTime() not as expected (1m12s)")
 	}
-	if _, err := alert.DetectionTime(1.01); err != ErrErrorRateOutOfRange {
-		t.Errorf("Alert.DetectionTime(1.01) returned error: %v", err)
+	if scenario, _ := NewScenario(alert, 0.5); scenario.DetectionTime() != 2*time.Minute+24*time.Second {
+		t.Errorf("Scenario.DetectionTime() not as expected (2m24s)")
 	}
-	if detectionTime, _ := alert.DetectionTime(1.0); detectionTime != 1*time.Minute+12*time.Second {
-		t.Errorf("Alert.DetectionTime(1.0) returned %s, expected 1m12s", detectionTime)
-	}
-	if detectionTime, _ := alert.DetectionTime(0.5); detectionTime != 2*time.Minute+24*time.Second {
-		t.Errorf("Alert.DetectionTime(1.0) returned %s, expected 2m24s", detectionTime)
+	if scenario, _ := NewScenario(alert, 0.01); scenario.DetectionTime() != -1 {
+		t.Errorf("Scenario.DetectionTime() did not return -1 when alert was not triggered")
 	}
 }
 
@@ -90,6 +100,6 @@ func TestErrorBudgetConsumedBeforeTriggering(t *testing.T) {
 	errorBudget := 0.03
 	alert, _ := NewSLOAlertFromPercentageUsed(0.99, 1*time.Hour, errorBudget)
 	if consumed := alert.ErrorBudgetConsumedBeforeTriggering(); math.Abs(consumed-errorBudget) > 1e-9 {
-		t.Errorf("Alert.ErrorBudgetConsumedBeforeTriggering returned %f, expected %f", consumed, errorBudget)
+		t.Errorf("Scenario.ErrorBudgetConsumedBeforeTriggering returned %f, expected %f", consumed, errorBudget)
 	}
 }
