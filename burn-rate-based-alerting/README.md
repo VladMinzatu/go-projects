@@ -36,7 +36,7 @@ This sounds more complicated than it is, really. The whole idea is that we pick 
 ```
 failure_ratio[1h] > burn_rate * (1.0 - SLO)
 ```
-So the burn_rate is just a positive multiplier, larger than 1, applied to the overall acceptable error budget. We are essentially acting as though we have have a higher tolerable error rate within any particular small window over which we are alerting.
+So the burn_rate is just a positive multiplier, larger than 1, applied to the overall acceptable error budget. We are essentially acting as though we have a higher tolerable error rate within any particular small window over which we are alerting.
 
 ### How does this solve our problems?
 
@@ -57,14 +57,14 @@ This will output ~0.015, which tells us that if we have a 99% availability SLO (
 
 The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget that the alert is detecting.
 
-And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! Using the code in this repo, you could do it like this:
+And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! And arguably this is the more intuitive way to define your alert in terms of your global error budget spend. Using the code in this repo, you could do it like this:
 ```
 sloAlert, _ := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.03)
 fmt.Println(sloAlert.BurnRate)
 ```
-In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will achieve that.
+In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will do that.
 
-*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across your 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 1.5% of our error budget. In practice, though, the alerting will still work well as long as we have some decent traffic coming in at all times at least. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section on it.*
+*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 1.5% of our error budget. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips.*
 
 What's more, once we have an alert configured, we can calculate whether the alert will fire and how long it would take for that alert to fire when we start seeing certain error rates. For example:
 ```
@@ -73,7 +73,7 @@ scenario, _ := NewScenario(sloAlert, 0.5)
 fmt.Printf("Alert fires: %t\n", scenario.Check())
 fmt.Printf("Detection time: %v\n", scenario.DetectionTime())
 ```
-Here, we have our 99% availability SLO over 28 days and we configured an alert to fire whenever we use up more than 3% of our budget in 1h. Then we simulate a scenario in which we start to see a 50% error rate. The output is:
+Here, we have our 99% availability SLO over 28 days and we configured an alert to fire whenever we use up more than 3% of our budget in 1h. Then we simulate a scenario in which our application suddenly starts failing 50% of its requests. The output is:
 ```
 Alert fires: true
 Detection time: 24m11.52s
@@ -85,10 +85,6 @@ scenario, _ := NewScenario(sloAlert, 1.0)
 ...
 ```
 Then the response time will be cut to 12m. If you feel this is a little too long, you can lower the percentage of error budget used slightly and this will give you an alert with a lower burn rate and that will trigger more quickly.
-
-### What params should you choose?
-using code in this repo, for configuration and scenario, print time to alerting.
-Tune, no right answer - multi window explained in the book
 
 ### This is not the end of the story
 
