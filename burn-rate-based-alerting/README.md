@@ -21,7 +21,7 @@ The first approach we could consider is to pick a small time window and alert if
 ```
 failure_ratio[10m] > 1.0 - SLO
 ```
-We'll get notified as soon as we are not within our SLO for the 10m window that just ended. We won't miss a much, for sure. But that is the main drawback of this strategy: it has high recall, meaning it will cause us to waste time looking into small glitches that actually just consume a very small portion of our total error budget. You may be alerted many times daily, while you're actually staying within budget.
+We'll get notified as soon as we are not within our SLO for the 10m window that just ended. We won't miss much with this approach, for sure. But that is the main drawback of this strategy: it has high recall, meaning it will cause us to waste time looking into small glitches that actually just consume a very small portion of our total error budget. You may be alerted many times daily, while you're actually staying within budget.
 
 To mitigate that issue, another approach would be to simply define an alert based on a much larger time window:
 ```
@@ -55,7 +55,9 @@ fmt.Println(sloAlert.PercentErrorBudgetConsumed)
 ```
 This will output ~0.015, which tells us that if we have a 99% availability SLO (over 28 days) and we define an alert with a burn_rate=10 over the past hour, we will have consumed 1.5% of our total error budget by the time the alert fires.
 
-In fact, it is possible to define your alerts in the form "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! Using the code in this repo, you could do it like this:
+The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget that the alert is detecting.
+
+And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! Using the code in this repo, you could do it like this:
 ```
 sloAlert, _ := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.03)
 fmt.Println(sloAlert.BurnRate)
