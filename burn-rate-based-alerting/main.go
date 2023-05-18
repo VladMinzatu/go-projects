@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// Just a demo of how to use the SLOAlert:
-	sloAlert, err := NewSLOAlertFromPercentageUsed(0.99, 1*time.Hour, 0.02) // alerting on 2% error budget used in the past hour (for our 99% SLO)
+	sloAlert, err := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.02) // alerting on 2% error budget used in the past hour (for our 99% SLO)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -28,7 +28,5 @@ func main() {
 	if sloCheck {
 		detectionTime := scenario.DetectionTime()
 		fmt.Printf("  Detection Time: %s\n", detectionTime)
-		errorBudgetConsumed := sloAlert.ErrorBudgetConsumedBeforeTriggering()
-		fmt.Printf("  Error Budget Consumed Before Triggering: %.2f%% \n", errorBudgetConsumed*100)
 	}
 }

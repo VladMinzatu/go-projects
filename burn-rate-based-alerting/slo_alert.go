@@ -26,44 +26,57 @@ var ErrErrorBudgetUsedOutOfRange = fmt.Errorf("errorBudgetUsed must be between %
 var ErrErrorRateOutOfRange = fmt.Errorf("errorRate must be between %f and %f", MinErrorRate, MaxErrorRate)
 
 type SLOAlert struct {
-	SLO             float64
-	AlertWindowSize time.Duration
-	BurnRate        float64
+	SLO                        float64
+	AlertWindowSize            time.Duration
+	BurnRate                   float64
+	PercentErrorBudgetConsumed float64
 }
 
-// A scenario models the alert behavior in a given circumstance, described by observing a fixed error rate in the system
+// A scenario models how an alert behaves when a certain error rate starts being observed in the system
 type Scenario struct {
 	Alert     *SLOAlert
 	ErrorRate float64
 }
 
-func NewSLOAlert(slo float64, alertWindowSize time.Duration, burnRate float64) (*SLOAlert, error) {
-	if slo < MinSLO || slo > MaxSLO {
-		return nil, ErrSLOOutOfRange
+func NewSLOAlertFromBurnRate(slo float64, alertWindowSize time.Duration, burnRate float64) (*SLOAlert, error) {
+	err := verifyAlertConfiguration(slo, alertWindowSize, burnRate)
+	if err != nil {
+		return nil, err
 	}
-	if alertWindowSize < MinAlertTimeWindow || alertWindowSize > MaxAlertTimeWindow {
-		return nil, ErrAlertTimeWindowOutOfRange
-	}
-	if burnRate < MinBurnRate || burnRate > MaxBurnRate {
-		return nil, ErrBurnRateOutOfRange
-	}
+
+	percentErrorBudgetConsumed := burnRate * float64(alertWindowSize) / float64(SLOWindowSize)
 	return &SLOAlert{
-		SLO:             slo,
-		AlertWindowSize: alertWindowSize,
-		BurnRate:        burnRate,
+		SLO:                        slo,
+		AlertWindowSize:            alertWindowSize,
+		BurnRate:                   burnRate,
+		PercentErrorBudgetConsumed: percentErrorBudgetConsumed,
 	}, nil
 }
 
-func NewSLOAlertFromPercentageUsed(slo float64, alertWindowSize time.Duration, errorBudgetUsed float64) (*SLOAlert, error) {
-	if errorBudgetUsed < MinErrorBudgetUsed || errorBudgetUsed > MaxErrorBudgetUsed {
+func NewSLOAlertFromBudgetUsed(slo float64, alertWindowSize time.Duration, percentageErrorBudgetUsed float64) (*SLOAlert, error) {
+	if percentageErrorBudgetUsed < MinErrorBudgetUsed || percentageErrorBudgetUsed > MaxErrorBudgetUsed {
 		return nil, ErrErrorBudgetUsedOutOfRange
 	}
-	burnRate := errorBudgetUsed * float64(SLOWindowSize) / float64(alertWindowSize)
-	return NewSLOAlert(slo, alertWindowSize, burnRate)
+
+	burnRate := percentageErrorBudgetUsed * float64(SLOWindowSize) / float64(alertWindowSize)
+	err := verifyAlertConfiguration(slo, alertWindowSize, burnRate)
+	if err != nil {
+		return nil, err
+	}
+	return NewSLOAlertFromBurnRate(slo, alertWindowSize, burnRate)
 }
 
-func (a *SLOAlert) ErrorBudgetConsumedBeforeTriggering() float64 {
-	return a.BurnRate * float64(a.AlertWindowSize) / float64(SLOWindowSize)
+func verifyAlertConfiguration(slo float64, alertWindowSize time.Duration, burnRate float64) error {
+	if slo < MinSLO || slo > MaxSLO {
+		return ErrSLOOutOfRange
+	}
+	if alertWindowSize < MinAlertTimeWindow || alertWindowSize > MaxAlertTimeWindow {
+		return ErrAlertTimeWindowOutOfRange
+	}
+	if burnRate < MinBurnRate || burnRate > MaxBurnRate {
+		return ErrBurnRateOutOfRange
+	}
+	return nil
 }
 
 func NewScenario(alert *SLOAlert, errorRate float64) (*Scenario, error) {
