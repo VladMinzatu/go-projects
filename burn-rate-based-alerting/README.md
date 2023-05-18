@@ -57,14 +57,14 @@ This will output ~0.015, which tells us that if we have a 99% availability SLO (
 
 The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget that the alert is detecting.
 
-*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across your 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 1.5% of our error budget. In practice, though, the alerting will still work well as long as we have some decent traffic coming in at all times at least. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section on it.*
-
 And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! Using the code in this repo, you could do it like this:
 ```
 sloAlert, _ := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.03)
 fmt.Println(sloAlert.BurnRate)
 ```
 In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will achieve that.
+
+*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across your 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 1.5% of our error budget. In practice, though, the alerting will still work well as long as we have some decent traffic coming in at all times at least. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section on it.*
 
 What's more, once we have an alert configured, we can calculate whether the alert will fire and how long it would take for that alert to fire when we start seeing certain error rates. For example:
 ```
