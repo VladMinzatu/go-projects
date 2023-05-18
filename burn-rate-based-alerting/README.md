@@ -6,7 +6,7 @@ This is a succinct explanation of alerting based on SLO burn rates. This content
 
 *I will assume the reader knows what SLOs and error budgets are. If you need a detailed introduction to the topic, [Google's SRE Books](https://sre.google/books/) are the go-to reference, of course.*
 
-We know that alerting should ideally be based on the SLOs that you define for your application (assuming you have defined enough of them and chosen them wisely).
+We know that alerting should ideally be based on the SLOs that you define for our application (assuming you have defined enough of them and chosen them wisely).
 
 SLOs are defined over longer fixed-size time windows and should preferably be expressed as a target for the ratio of "successful requests" to "total requests" that the application processes.
 For example, `in this 28 day window, 99% of client requests completed successfully`. I will use this example throughout this post.
@@ -57,14 +57,18 @@ This will output ~0.015, which tells us that if we have a 99% availability SLO (
 
 The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget that the alert is detecting.
 
-And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! And arguably this is the more intuitive way to define your alert in terms of your global error budget spend. Using the code in this repo, you could do it like this:
+And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! And arguably this is the more intuitive way to define our alert in terms of our global error budget spend (our improvement goal was to have an alert that doesn't fire when we are not really using up much of our error budget, after all!!). Using the code in this repo, you could do it like this:
 ```
 sloAlert, _ := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.03)
 fmt.Println(sloAlert.BurnRate)
 ```
 In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will do that.
 
-*Side Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have actually consumed less than 3% of our error budget by the time the alert fires. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips. Just as a thought experiment: to properly alert on percentage of error budget used in the past 1h, one would have to use a much more involved approach: no more burn_rate, but instead measure the #errors in the past 1h and divide by the #errors in the budget. This requires fixed time windows of X days (instead of rolling) and projection of the number of errors in the budget based on past windows.*
+```
+Side Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the average, we will have actually consumed less than 3% of our error budget by the time the alert fires. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips. 
+
+Just as a thought experiment: to accurately alert on percentage of error budget used in the past 1h, one would have to use a much more involved approach: no more burn_rate, but instead measure the #errors in the past 1h and divide by the #errors in the budget. This requires fixed time windows of X days (instead of rolling) and projecting the number of errors in the budget based on past windows.
+```
 
 What's more, once we have an alert configured, we can calculate whether the alert will fire and how long it would take for that alert to fire when we start seeing certain error rates. For example:
 ```
