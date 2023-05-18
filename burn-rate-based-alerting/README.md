@@ -64,7 +64,7 @@ fmt.Println(sloAlert.BurnRate)
 ```
 In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will do that.
 
-*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 1.5% of our error budget. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips.*
+*Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the everage, we will have consumed less than 3% of our error budget. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips.*
 
 What's more, once we have an alert configured, we can calculate whether the alert will fire and how long it would take for that alert to fire when we start seeing certain error rates. For example:
 ```
