@@ -36,9 +36,9 @@ This sounds more complicated than it is, really. The whole idea is that we pick 
 ```
 failure_ratio[1h] > burn_rate * (1.0 - SLO)
 ```
-So the burn_rate is just a positive multiplier, larger than 1, applied to the overall acceptable error budget. We are essentially acting as though we have a higher tolerable error rate within any particular small window over which we are alerting.
+So the burn_rate is just a positive multiplier, larger than 1, applied to the overall acceptable error budget. And the alert condition is just telling us that we are burning our error budget that much faster (=burn_rate) than expected. A burn_rate of 1 means we're burning the budget in the expected 28 days. A burn_rate of 2 means that if the alert fires we are now burning our error budget at a rate that would consume it in 14 days, etc.
 
-### How does this solve our problems?
+### But how does this solve our problems?
 
 Because we don't use a large window, we don't have a big reset time problem. 
 
@@ -48,23 +48,23 @@ And because we have our burn_rate multiplier as part of the alert condition, we 
 
 So far, it isn't at all clear what constitutes a good burn_rate, or even that this is really a promising approach at all. Fortunately, we can run some calculations that give us more insight into how such alerting behaves before even putting it to work.
 
-First of all, the burn_rate has an interesting relationship to the consumption of global error budget within the chosen window. Using the code in this repo, we can perform such calculations:
+First of all, the burn_rate has an interesting relationship to the consumption of total error budget within the chosen window. Using the code in this repo, we can perform such calculations:
 ```
 sloAlert, _ := NewSLOAlertFromBurnRate(0.99, 1*time.Hour, 10.0)
 fmt.Println(sloAlert.PercentErrorBudgetConsumed)
 ```
-This will output ~0.015, which tells us that if we have a 99% availability SLO (over 28 days) and we define an alert with a burn_rate=10 over the past hour, we will have consumed 1.5% of our total error budget by the time the alert fires.
+This will output ~0.015, which tells us that if we define an alert with a burn_rate=10 over the past hour, we will have consumed 1.5% of our total error budget by the time the alert fires.
 
-The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget that the alert is detecting.
+The relationship can be explained quite simply: 100% of our error budget, whatever it may be, is meant to be spent in 28 days, as a target. That means we have just under 0.15% of our budget to spend per hour. Multiply that by the burn rate, and that's the percentage of the total budget spend that the alert is detecting.
 
 And of course, this means we can go the other way around and define our alerts in the terms "Alert me when X% of the total error budget has been consumed in the past hour". This is just an alternative way of expressing the same kind of alert! And arguably this is the more intuitive way to define our alert in terms of our global error budget spend (our improvement goal was to have an alert that doesn't fire when we are not really using up much of our error budget, after all!!). Using the code in this repo, you could do it like this:
 ```
 sloAlert, _ := NewSLOAlertFromBudgetUsed(0.99, 1*time.Hour, 0.03)
 fmt.Println(sloAlert.BurnRate)
 ```
-In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will do that.
+In the code above we have configured an alert to trigger when 3% of the total error budget has been used in the past hour. The output tells us that an alert with a burn_rate of just over 20 will do just that.
 
-*Side Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the average, we will have actually consumed less than 3% of our error budget by the time the alert fires. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips. Just as a thought experiment: to accurately alert on percentage of error budget used in the past 1h, one would have to use a much more involved approach: no more burn_rate, but instead measure the #errors in the past 1h and divide by the #errors in the budget. This requires fixed time windows of X days (instead of rolling) and projecting the number of errors in the budget based on past windows.*
+*Side Note: There is a quiet assumption in these calculations that the request rate is uniformly spread across our 28 day interval. Indeed, if we have an outage at a time when the request rate is very low compared to the average, we will have actually consumed less than 3% of our error budget by the time the alert fires. In practice, though, the alerting will still work well as long as we at least have enough traffic coming in to give us some meaningful signal at all times. And for monitoring applications with low traffic, [the workbook](https://sre.google/workbook/alerting-on-slos/) has a dedicated section with some tips. Just as a thought experiment: to accurately alert on percentage of error budget used in the past 1h, one would have to use a much more involved approach: no more burn_rate, but instead measure the #errors in the past 1h and divide by the #errors in the budget. This requires fixed time windows of X days (instead of rolling) and projecting the number of errors in the budget based on past windows. But that approach has drawbacks of its own, not leas of which is its complexity.*
 
 What's more, once we have an alert configured, we can calculate whether the alert will fire and how long it would take for that alert to fire when we start seeing certain error rates. For example:
 ```
