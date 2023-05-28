@@ -27,7 +27,7 @@ To mitigate that issue, another approach would be to simply define an alert base
 ```
 failure_ratio[24h] > 1.0 - SLO
 ```
-In case of a serious outage, this approach would still alert us fairly quickly, but the main drawback of this approach is that it has a big reset time, meaning the alert stays active for a long time even after an issue is resolved, so it's not very practical.
+In case of a serious outage, this approach would still alert us fairly quickly (not as quickly as the previous approach, though), but the main drawback of this approach is that it has a big reset time, meaning the alert stays active for a long time even after an issue is resolved, so it's not very practical.
 
 ### Burn rate based alerting
 This brings us to alerting based on burn rate. The burn rate represents how fast, relative to the SLO, the service consumes the error budget.
