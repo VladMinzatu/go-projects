@@ -1,6 +1,6 @@
 # SLO Burn Rate Based Alerting
 
-This is a succinct explanation of alerting based on SLO burn rates. This content is based on the information inside the ["Alerting on SLOs" chapter in the SRE workbook](https://sre.google/workbook/alerting-on-slos/).
+This is a succinct explanation of alerting based on SLO burn rates, with some accompanying go code. This content is based on the information inside the ["Alerting on SLOs" chapter in the SRE workbook](https://sre.google/workbook/alerting-on-slos/).
 
 ### Setting the scene
 
